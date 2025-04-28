@@ -1,10 +1,18 @@
 import tensorflow as tf
 import os
+import json
 
 
-def convert_model(model_path, output_path):
-    # Load the Keras model
-    model = tf.keras.models.load_model(model_path)
+def convert_model(json_path, weights_path, output_path):
+    # Load the model architecture from JSON
+    with open(json_path, 'r') as f:
+        model_json = f.read()
+
+    # Create model from JSON
+    model = tf.keras.models.model_from_json(model_json)
+
+    # Load weights
+    model.load_weights(weights_path)
 
     # Convert the model to TFLite format
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -13,19 +21,20 @@ def convert_model(model_path, output_path):
     # Save the TFLite model
     with open(output_path, 'wb') as f:
         f.write(tflite_model)
-    print(f"Converted {model_path} to {output_path}")
+    print(f"Converted {json_path} and {weights_path} to {output_path}")
 
 
 # Convert all models
 model_dir = 'model'
 models = [
-    ('model-bw.h5', 'model-bw.tflite'),
-    ('model-bw_dru.h5', 'model-bw_dru.tflite'),
-    ('model-bw_tkdi.h5', 'model-bw_tkdi.tflite'),
-    ('model-bw_smn.h5', 'model-bw_smn.tflite')
+    ('model-bw.json', 'model-bw.h5', 'model-bw.tflite'),
+    ('model-bw_dru.json', 'model-bw_dru.h5', 'model-bw_dru.tflite'),
+    ('model-bw_tkdi.json', 'model-bw_tkdi.h5', 'model-bw_tkdi.tflite'),
+    ('model-bw_smn.json', 'model-bw_smn.h5', 'model-bw_smn.tflite')
 ]
 
-for h5_file, tflite_file in models:
-    input_path = os.path.join(model_dir, h5_file)
+for json_file, h5_file, tflite_file in models:
+    json_path = os.path.join(model_dir, json_file)
+    weights_path = os.path.join(model_dir, h5_file)
     output_path = os.path.join(model_dir, tflite_file)
-    convert_model(input_path, output_path)
+    convert_model(json_path, weights_path, output_path)
