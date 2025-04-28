@@ -3,7 +3,7 @@ import tkinter as tk
 import cv2
 import os
 import numpy as np
-from keras.models import model_from_json
+import tflite_runtime.interpreter as tflite
 import operator
 import time
 import sys
@@ -22,29 +22,22 @@ class Application:
         self.current_image = None
         self.current_image2 = None
 
-        self.json_file = open(self.directory+"model-bw.json", "r")
-        self.model_json = self.json_file.read()
-        self.json_file.close()
-        self.loaded_model = model_from_json(self.model_json)
-        self.loaded_model.load_weights(self.directory+"model-bw.h5")
+        # Load TFLite models
+        self.interpreter = tflite.Interpreter(
+            model_path=self.directory+"/model-bw.tflite")
+        self.interpreter.allocate_tensors()
 
-        self.json_file_dru = open(self.directory+"model-bw_dru.json", "r")
-        self.model_json_dru = self.json_file_dru.read()
-        self.json_file_dru.close()
-        self.loaded_model_dru = model_from_json(self.model_json_dru)
-        self.loaded_model_dru.load_weights("model-bw_dru.h5")
+        self.interpreter_dru = tflite.Interpreter(
+            model_path=self.directory+"/model-bw_dru.tflite")
+        self.interpreter_dru.allocate_tensors()
 
-        self.json_file_tkdi = open(self.directory+"model-bw_tkdi.json", "r")
-        self.model_json_tkdi = self.json_file_tkdi.read()
-        self.json_file_tkdi.close()
-        self.loaded_model_tkdi = model_from_json(self.model_json_tkdi)
-        self.loaded_model_tkdi.load_weights(self.directory+"model-bw_tkdi.h5")
+        self.interpreter_tkdi = tflite.Interpreter(
+            model_path=self.directory+"/model-bw_tkdi.tflite")
+        self.interpreter_tkdi.allocate_tensors()
 
-        self.json_file_smn = open(self.directory+"model-bw_smn.json", "r")
-        self.model_json_smn = self.json_file_smn.read()
-        self.json_file_smn.close()
-        self.loaded_model_smn = model_from_json(self.model_json_smn)
-        self.loaded_model_smn.load_weights(self.directory+"model-bw_smn.h5")
+        self.interpreter_smn = tflite.Interpreter(
+            model_path=self.directory+"/model-bw_smn.tflite")
+        self.interpreter_smn.allocate_tensors()
 
         self.ct = {}
         self.ct['blank'] = 0
@@ -172,13 +165,17 @@ class Application:
 
     def predict(self, test_image):
         test_image = cv2.resize(test_image, (128, 128))
-        result = self.loaded_model.predict(test_image.reshape(1, 128, 128, 1))
-        result_dru = self.loaded_model_dru.predict(
-            test_image.reshape(1, 128, 128, 1))
-        result_tkdi = self.loaded_model_tkdi.predict(
-            test_image.reshape(1, 128, 128, 1))
-        result_smn = self.loaded_model_smn.predict(
-            test_image.reshape(1, 128, 128, 1))
+        self.interpreter.set_tensor(self.interpreter.get_input_details()[
+                                    0]['index'], test_image.reshape(1, 128, 128, 1))
+        self.interpreter.invoke()
+        result = self.interpreter.get_tensor(
+            self.interpreter.get_output_details()[0]['index'])
+        result_dru = self.interpreter_dru.get_tensor(
+            self.interpreter_dru.get_output_details()[0]['index'])
+        result_tkdi = self.interpreter_tkdi.get_tensor(
+            self.interpreter_tkdi.get_output_details()[0]['index'])
+        result_smn = self.interpreter_smn.get_tensor(
+            self.interpreter_smn.get_output_details()[0]['index'])
         prediction = {}
         prediction['blank'] = result[0][0]
         inde = 1
