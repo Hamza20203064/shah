@@ -58,7 +58,7 @@ nbformat==4.4.0
 notebook==5.7.0
 numba==0.40.0
 numexpr==2.6.8
-numpy>=1.19.2
+numpy>=1.24.3
 numpydoc==0.8.0
 olefile==0.46
 opencv-python>=4.5.1.48
@@ -96,7 +96,7 @@ requests-file==1.4.3
 requests-ftp==0.3.1
 rope==0.11.0
 scikit-learn>=0.24.2
-scipy==1.1.0
+scipy>=1.7.0
 SecretStorage==3.1.0
 Send2Trash==1.5.0
 simplegeneric==0.8.1
