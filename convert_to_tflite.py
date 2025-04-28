@@ -1,15 +1,21 @@
 import tensorflow as tf
 import os
 import json
+import keras
+from keras.models import model_from_json
+from keras import backend as K
 
 
 def convert_model(json_path, weights_path, output_path):
+    # Set the backend to tensorflow
+    K.set_image_data_format('channels_last')
+
     # Load the model architecture from JSON
     with open(json_path, 'r') as f:
         model_json = f.read()
 
     # Create model from JSON
-    model = tf.keras.models.model_from_json(model_json)
+    model = model_from_json(model_json)
 
     # Load weights
     model.load_weights(weights_path)
