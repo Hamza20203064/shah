@@ -1,21 +1,22 @@
 import tensorflow as tf
 import os
 import json
-import keras
-from keras.models import model_from_json
-from keras import backend as K
 
 
 def convert_model(json_path, weights_path, output_path):
-    # Set the backend to tensorflow
-    K.set_image_data_format('channels_last')
-
     # Load the model architecture from JSON
     with open(json_path, 'r') as f:
         model_json = f.read()
 
-    # Create model from JSON
-    model = model_from_json(model_json)
+    # Create model from JSON using tf.keras
+    model = tf.keras.models.model_from_json(model_json, custom_objects={
+        'Sequential': tf.keras.Sequential,
+        'Conv2D': tf.keras.layers.Conv2D,
+        'MaxPooling2D': tf.keras.layers.MaxPooling2D,
+        'Flatten': tf.keras.layers.Flatten,
+        'Dense': tf.keras.layers.Dense,
+        'Dropout': tf.keras.layers.Dropout
+    })
 
     # Load weights
     model.load_weights(weights_path)
