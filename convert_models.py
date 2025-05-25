@@ -1,20 +1,24 @@
 import tensorflow as tf
 import os
 import json
+import numpy as np
+
+
+def create_model_from_config(json_path):
+    with open(json_path, 'r') as f:
+        model_config = json.load(f)
+
+    # Create model from config
+    model = tf.keras.models.model_from_config(model_config)
+    return model
 
 
 def convert_model(json_path, weights_path, output_path):
     try:
         print(f"Loading model from {json_path}")
-        # Load the model architecture from JSON
-        with open(json_path, 'r') as f:
-            model_json = f.read()
-
-        # Create model from JSON using tf.keras
-        model = tf.keras.models.model_from_json(model_json)
+        model = create_model_from_config(json_path)
         print("Model architecture loaded")
 
-        # Load weights
         print(f"Loading weights from {weights_path}")
         model.load_weights(weights_path)
         print("Weights loaded")
@@ -23,14 +27,26 @@ def convert_model(json_path, weights_path, output_path):
         model.compile(optimizer='adam', loss='categorical_crossentropy')
         print("Model compiled")
 
+        # Create a representative dataset generator
+        def representative_dataset():
+            for _ in range(100):
+                data = np.random.random((1, 128, 128, 1)).astype(np.float32)
+                yield [data]
+
         # Convert the model to TFLite format
         print("Converting to TFLite format")
         converter = tf.lite.TFLiteConverter.from_keras_model(model)
 
         # Set conversion options
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
+        converter.representative_dataset = representative_dataset
+        converter.target_spec.supported_ops = [
+            tf.lite.OpsSet.TFLITE_BUILTINS_INT8,
+            tf.lite.OpsSet.TFLITE_BUILTINS
+        ]
         converter.target_spec.supported_types = [tf.float32]
+        converter.inference_input_type = tf.float32
+        converter.inference_output_type = tf.float32
 
         # Convert
         tflite_model = converter.convert()
