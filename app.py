@@ -11,6 +11,7 @@ import os
 import matplotlib.pyplot as plt
 import hunspell
 from string import ascii_uppercase
+import json
 
 
 class Application:
@@ -18,25 +19,72 @@ class Application:
         self.directory = 'model'
         self.hs = hunspell.HunSpell(
             '/usr/share/hunspell/en_US.dic', '/usr/share/hunspell/en_US.aff')
-        self.vs = cv2.VideoCapture(0)
+
+        # Try different video devices
+        self.vs = None
+        video_devices = [0, 10, 11, 12, 13, 14,
+                         15, 16, 18, 19, 20, 21, 22, 23, 31]
+        for device in video_devices:
+            try:
+                print(f"Trying video device {device}...")
+                self.vs = cv2.VideoCapture(device)
+                if self.vs.isOpened():
+                    ret, frame = self.vs.read()
+                    if ret:
+                        print(f"Successfully opened video device {device}")
+                        break
+                    else:
+                        self.vs.release()
+            except Exception as e:
+                print(f"Failed to open video device {device}: {str(e)}")
+                if self.vs is not None:
+                    self.vs.release()
+
+        if self.vs is None or not self.vs.isOpened():
+            raise RuntimeError("Could not open any video device")
+
         self.current_image = None
         self.current_image2 = None
 
         # Load models
-        self.model = tf.keras.models.load_model(self.directory+"/model-bw.h5")
-        self.model_dru = tf.keras.models.load_model(
-            self.directory+"/model-bw_dru.h5")
-        self.model_tkdi = tf.keras.models.load_model(
-            self.directory+"/model-bw_tkdi.h5")
-        self.model_smn = tf.keras.models.load_model(
-            self.directory+"/model-bw_smn.h5")
+        print("Loading models...")
+        # Load model-bw
+        with open(os.path.join(self.directory, "model-bw.json"), 'r') as f:
+            model_config = json.load(f)
+        self.model = tf.keras.models.model_from_config(model_config)
+        self.model.load_weights(os.path.join(self.directory, "model-bw.h5"))
+        print("Loaded model-bw")
+
+        # Load model-bw_dru
+        with open(os.path.join(self.directory, "model-bw_dru.json"), 'r') as f:
+            model_config = json.load(f)
+        self.model_dru = tf.keras.models.model_from_config(model_config)
+        self.model_dru.load_weights(os.path.join(
+            self.directory, "model-bw_dru.h5"))
+        print("Loaded model-bw_dru")
+
+        # Load model-bw_tkdi
+        with open(os.path.join(self.directory, "model-bw_tkdi.json"), 'r') as f:
+            model_config = json.load(f)
+        self.model_tkdi = tf.keras.models.model_from_config(model_config)
+        self.model_tkdi.load_weights(os.path.join(
+            self.directory, "model-bw_tkdi.h5"))
+        print("Loaded model-bw_tkdi")
+
+        # Load model-bw_smn
+        with open(os.path.join(self.directory, "model-bw_smn.json"), 'r') as f:
+            model_config = json.load(f)
+        self.model_smn = tf.keras.models.model_from_config(model_config)
+        self.model_smn.load_weights(os.path.join(
+            self.directory, "model-bw_smn.h5"))
+        print("Loaded model-bw_smn")
 
         self.ct = {}
         self.ct['blank'] = 0
         self.blank_flag = 0
         for i in ascii_uppercase:
             self.ct[i] = 0
-        print("Loaded model from disk")
+        print("All models loaded successfully")
         self.root = tk.Tk()
         self.root.title("Sign language to Text Converter")
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)
