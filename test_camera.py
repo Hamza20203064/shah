@@ -5,41 +5,24 @@ import time
 def test_camera():
     print("Testing camera...")
 
-    # Try different camera devices
-    camera_devices = [
-        "/dev/video10",
-        "/dev/video11",
-        "/dev/video12",
-        "/dev/video13",
-        "/dev/video14",
-        "/dev/video15",
-        "/dev/video16",
-        "/dev/video18",
-        "/dev/video19",
-        "/dev/video20",
-        "/dev/video21",
-        "/dev/video22",
-        "/dev/video23",
-        "/dev/video31"
-    ]
-
-    for device in camera_devices:
+    # Try different camera indices
+    for i in range(10):  # Try first 10 indices
         try:
-            print(f"\nTrying camera device: {device}")
-            cap = cv2.VideoCapture(device)
+            print(f"\nTrying camera index: {i}")
+            cap = cv2.VideoCapture(i)
 
             if not cap.isOpened():
-                print(f"Failed to open {device}")
+                print(f"Failed to open camera index {i}")
                 continue
 
             # Try to read a frame
             ret, frame = cap.read()
             if not ret or frame is None:
-                print(f"Could not read frame from {device}")
+                print(f"Could not read frame from camera index {i}")
                 cap.release()
                 continue
 
-            print(f"Successfully opened {device}")
+            print(f"Successfully opened camera index {i}")
             print(f"Frame shape: {frame.shape}")
 
             # Show the frame
@@ -52,7 +35,7 @@ def test_camera():
             return True
 
         except Exception as e:
-            print(f"Error with {device}: {str(e)}")
+            print(f"Error with camera index {i}: {str(e)}")
             if 'cap' in locals():
                 cap.release()
 
