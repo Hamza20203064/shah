@@ -3,36 +3,32 @@ import os
 import numpy as np
 
 
-def create_simple_model():
-    # Create a very simple model for testing
-    model = tf.keras.Sequential([
-        tf.keras.layers.Input(shape=(128, 128, 1)),
-        tf.keras.layers.Conv2D(16, (3, 3), activation='relu'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(27, activation='softmax')  # 26 letters + blank
-    ])
-    return model
-
-
-def convert_to_tflite(model_name):
+def create_tflite_model(model_name):
     try:
-        # Create and compile model
-        model = create_simple_model()
+        # Create a simple model
+        model = tf.keras.Sequential([
+            tf.keras.layers.Input(shape=(128, 128, 1)),
+            tf.keras.layers.Conv2D(16, (3, 3), activation='relu'),
+            tf.keras.layers.MaxPooling2D((2, 2)),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(27, activation='softmax')
+        ])
+
+        # Compile model
         model.compile(optimizer='adam', loss='categorical_crossentropy')
 
         # Create a dummy input
         dummy_input = np.zeros((1, 128, 128, 1))
         model.predict(dummy_input)
 
-        # Save as SavedModel first
-        saved_model_path = os.path.join('model', f'{model_name}_saved')
-        model.save(saved_model_path)
-
-        # Convert using SavedModel
-        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
+        # Create TFLite model
+        converter = tf.lite.TFLiteConverter.from_keras_model(model)
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
+
+        # Set input and output types
+        converter.inference_input_type = tf.float32
+        converter.inference_output_type = tf.float32
 
         # Convert
         tflite_model = converter.convert()
@@ -43,14 +39,13 @@ def convert_to_tflite(model_name):
             f.write(tflite_model)
         print(f"Successfully created {tflite_path}")
 
-        # Clean up saved model directory
-        import shutil
-        shutil.rmtree(saved_model_path)
+        # Verify the model
+        interpreter = tf.lite.Interpreter(model_content=tflite_model)
+        interpreter.allocate_tensors()
+        print(f"Model verification successful for {model_name}")
 
     except Exception as e:
-        print(f"Error converting {model_name}: {str(e)}")
-        if os.path.exists(saved_model_path):
-            shutil.rmtree(saved_model_path)
+        print(f"Error creating {model_name}: {str(e)}")
 
 
 # List of models to create
@@ -61,7 +56,7 @@ models = [
     'model-bw_smn'
 ]
 
-# Convert each model
+# Create each model
 for model_name in models:
-    print(f"\nConverting {model_name}...")
-    convert_to_tflite(model_name)
+    print(f"\nCreating {model_name}...")
+    create_tflite_model(model_name)
