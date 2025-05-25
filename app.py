@@ -16,7 +16,8 @@ import json
 
 class Application:
     def __init__(self):
-        self.directory = os.path.dirname(os.path.abspath(__file__))
+        self.directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'model')
         self.camera = None
         self.initialize_camera()
         self.load_models()
