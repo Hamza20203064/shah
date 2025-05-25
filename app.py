@@ -27,18 +27,48 @@ class Application:
         """Initialize camera with multiple attempts"""
         try:
             print("Initializing camera...")
-            self.camera = cv2.VideoCapture(0)  # Try default camera first
-            if not self.camera.isOpened():
-                print("Trying alternative camera...")
-                self.camera = cv2.VideoCapture(1)  # Try alternative camera
+            # Try different camera devices
+            camera_devices = [
+                "/dev/video0",
+                "/dev/video1",
+                "/dev/video10",
+                "/dev/video11",
+                "/dev/video12",
+                "/dev/video13",
+                "/dev/video14",
+                "/dev/video15",
+                "/dev/video16",
+                "/dev/video18",
+                "/dev/video19",
+                "/dev/video20",
+                "/dev/video21",
+                "/dev/video22",
+                "/dev/video23",
+                "/dev/video31"
+            ]
 
-            if not self.camera.isOpened():
-                raise RuntimeError("Could not open camera")
+            for device in camera_devices:
+                try:
+                    print(f"Trying camera device: {device}")
+                    self.camera = cv2.VideoCapture(device)
+                    if self.camera.isOpened():
+                        ret, frame = self.camera.read()
+                        if ret:
+                            print(
+                                f"Successfully opened camera device: {device}")
+                            # Set camera properties
+                            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                            return
+                        else:
+                            self.camera.release()
+                except Exception as e:
+                    print(f"Failed to open {device}: {str(e)}")
+                    if self.camera is not None:
+                        self.camera.release()
+                        self.camera = None
 
-            # Set camera properties
-            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            print("Camera initialized successfully")
+            raise RuntimeError("Could not open any camera device")
 
         except Exception as e:
             print(f"Error initializing camera: {str(e)}")
