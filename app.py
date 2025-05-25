@@ -3,7 +3,7 @@ import tkinter as tk
 import cv2
 import os
 import numpy as np
-import tflite_runtime.interpreter as tflite
+import tensorflow as tf
 import operator
 import time
 import sys
@@ -22,22 +22,14 @@ class Application:
         self.current_image = None
         self.current_image2 = None
 
-        # Load TFLite models
-        self.interpreter = tflite.Interpreter(
-            model_path=self.directory+"/model-bw.tflite")
-        self.interpreter.allocate_tensors()
-
-        self.interpreter_dru = tflite.Interpreter(
-            model_path=self.directory+"/model-bw_dru.tflite")
-        self.interpreter_dru.allocate_tensors()
-
-        self.interpreter_tkdi = tflite.Interpreter(
-            model_path=self.directory+"/model-bw_tkdi.tflite")
-        self.interpreter_tkdi.allocate_tensors()
-
-        self.interpreter_smn = tflite.Interpreter(
-            model_path=self.directory+"/model-bw_smn.tflite")
-        self.interpreter_smn.allocate_tensors()
+        # Load models
+        self.model = tf.keras.models.load_model(self.directory+"/model-bw.h5")
+        self.model_dru = tf.keras.models.load_model(
+            self.directory+"/model-bw_dru.h5")
+        self.model_tkdi = tf.keras.models.load_model(
+            self.directory+"/model-bw_tkdi.h5")
+        self.model_smn = tf.keras.models.load_model(
+            self.directory+"/model-bw_smn.h5")
 
         self.ct = {}
         self.ct['blank'] = 0
@@ -165,17 +157,14 @@ class Application:
 
     def predict(self, test_image):
         test_image = cv2.resize(test_image, (128, 128))
-        self.interpreter.set_tensor(self.interpreter.get_input_details()[
-                                    0]['index'], test_image.reshape(1, 128, 128, 1))
-        self.interpreter.invoke()
-        result = self.interpreter.get_tensor(
-            self.interpreter.get_output_details()[0]['index'])
-        result_dru = self.interpreter_dru.get_tensor(
-            self.interpreter_dru.get_output_details()[0]['index'])
-        result_tkdi = self.interpreter_tkdi.get_tensor(
-            self.interpreter_tkdi.get_output_details()[0]['index'])
-        result_smn = self.interpreter_smn.get_tensor(
-            self.interpreter_smn.get_output_details()[0]['index'])
+        test_image = test_image.reshape(1, 128, 128, 1)
+        test_image = test_image.astype('float32') / 255.0
+
+        result = self.model.predict(test_image)
+        result_dru = self.model_dru.predict(test_image)
+        result_tkdi = self.model_tkdi.predict(test_image)
+        result_smn = self.model_smn.predict(test_image)
+
         prediction = {}
         prediction['blank'] = result[0][0]
         inde = 1
