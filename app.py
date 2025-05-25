@@ -29,8 +29,6 @@ class Application:
             print("Initializing camera...")
             # Try different camera devices
             camera_devices = [
-                "/dev/video0",
-                "/dev/video1",
                 "/dev/video10",
                 "/dev/video11",
                 "/dev/video12",
@@ -53,7 +51,7 @@ class Application:
                     self.camera = cv2.VideoCapture(device)
                     if self.camera.isOpened():
                         ret, frame = self.camera.read()
-                        if ret:
+                        if ret and frame is not None:
                             print(
                                 f"Successfully opened camera device: {device}")
                             # Set camera properties
@@ -61,6 +59,7 @@ class Application:
                             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                             return
                         else:
+                            print(f"Could not read frame from {device}")
                             self.camera.release()
                 except Exception as e:
                     print(f"Failed to open {device}: {str(e)}")
