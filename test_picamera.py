@@ -1,39 +1,43 @@
-from picamera import PiCamera
-from picamera.array import PiRGBArray
-import time
 import cv2
+import time
 
 
-def test_picamera():
+def test_camera():
     try:
-        print("Initializing PiCamera...")
-        camera = PiCamera()
-        camera.resolution = (640, 480)
-        camera.framerate = 30
-        raw_capture = PiRGBArray(camera, size=(640, 480))
+        print("Initializing camera...")
+        # Try different camera indices
+        for camera_index in range(10):
+            print(f"Trying camera index {camera_index}...")
+            cap = cv2.VideoCapture(camera_index)
 
-        print("Camera initialized. Capturing frame...")
-        # Allow the camera to warm up
-        time.sleep(2)
+            if cap.isOpened():
+                print(f"Successfully opened camera {camera_index}")
+                # Read a frame
+                ret, frame = cap.read()
 
-        # Capture a frame
-        camera.capture(raw_capture, format="rgb")
-        frame = raw_capture.array
+                if ret:
+                    print(
+                        f"Successfully captured frame from camera {camera_index}")
+                    print(f"Frame shape: {frame.shape}")
 
-        print(f"Frame captured. Shape: {frame.shape}")
+                    # Display the frame
+                    cv2.imshow('Test Frame', frame)
+                    print("Press any key to continue...")
+                    cv2.waitKey(0)
 
-        # Convert to BGR for OpenCV
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    # Clean up
+                    cv2.destroyAllWindows()
+                    cap.release()
+                    return True
+                else:
+                    print(
+                        f"Failed to capture frame from camera {camera_index}")
 
-        # Display the frame
-        cv2.imshow('Test Frame', frame)
-        print("Press any key to continue...")
-        cv2.waitKey(0)
+            cap.release()
+            print(f"Camera {camera_index} not available")
 
-        # Clean up
-        cv2.destroyAllWindows()
-        camera.close()
-        return True
+        print("No working camera found")
+        return False
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -41,4 +45,4 @@ def test_picamera():
 
 
 if __name__ == "__main__":
-    test_picamera()
+    test_camera()
