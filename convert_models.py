@@ -2,6 +2,7 @@ import tensorflow as tf
 import os
 import json
 import numpy as np
+import shutil
 
 
 def create_model_from_config(json_path):
@@ -27,9 +28,21 @@ def convert_model(json_path, weights_path, output_path):
         model.compile(optimizer='adam', loss='categorical_crossentropy')
         print("Model compiled")
 
-        # Convert the model to TFLite format
+        # Save as SavedModel first
+        temp_saved_model_dir = os.path.join(
+            os.path.dirname(output_path), 'temp_saved_model')
+        if os.path.exists(temp_saved_model_dir):
+            shutil.rmtree(temp_saved_model_dir)
+        os.makedirs(temp_saved_model_dir)
+
+        print("Saving as SavedModel...")
+        tf.saved_model.save(model, temp_saved_model_dir)
+        print("SavedModel created successfully")
+
+        # Convert the SavedModel to TFLite format
         print("Converting to TFLite format")
-        converter = tf.lite.TFLiteConverter.from_keras_model(model)
+        converter = tf.lite.TFLiteConverter.from_saved_model(
+            temp_saved_model_dir)
 
         # Set basic conversion options
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
@@ -44,6 +57,10 @@ def convert_model(json_path, weights_path, output_path):
             f.write(tflite_model)
         print(f"Successfully converted {json_path} to {output_path}")
 
+        # Clean up temporary SavedModel directory
+        shutil.rmtree(temp_saved_model_dir)
+        print("Cleaned up temporary files")
+
         # Verify the model
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         interpreter.allocate_tensors()
@@ -52,6 +69,9 @@ def convert_model(json_path, weights_path, output_path):
     except Exception as e:
         print(f"Error converting {json_path}: {str(e)}")
         print("Full error:", e)
+        # Clean up temporary directory if it exists
+        if os.path.exists(temp_saved_model_dir):
+            shutil.rmtree(temp_saved_model_dir)
 
 
 # Convert all models
