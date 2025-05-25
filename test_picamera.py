@@ -7,41 +7,56 @@ def test_camera():
         print("Initializing camera...")
         # List of video devices to try
         video_devices = [
-            '/dev/video10', '/dev/video11', '/dev/video12', '/dev/video13',
-            '/dev/video14', '/dev/video15', '/dev/video16', '/dev/video18',
-            '/dev/video19', '/dev/video20', '/dev/video21', '/dev/video22',
-            '/dev/video23', '/dev/video31'
+            # Only try the devices that were detected
+            '/dev/video14', '/dev/video15', '/dev/video21', '/dev/video22'
         ]
 
         for device in video_devices:
-            print(f"Trying device {device}...")
+            print(f"\nTrying device {device}...")
             cap = cv2.VideoCapture(device)
 
             if cap.isOpened():
                 print(f"Successfully opened {device}")
-                # Read a frame
-                ret, frame = cap.read()
 
-                if ret:
-                    print(f"Successfully captured frame from {device}")
-                    print(f"Frame shape: {frame.shape}")
+                # Try different formats
+                formats = [
+                    (640, 480),
+                    (320, 240),
+                    (1280, 720)
+                ]
 
-                    # Display the frame
-                    cv2.imshow('Test Frame', frame)
-                    print("Press any key to continue...")
-                    cv2.waitKey(0)
+                for width, height in formats:
+                    print(f"Trying format: {width}x{height}")
+                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-                    # Clean up
-                    cv2.destroyAllWindows()
-                    cap.release()
-                    return True
-                else:
-                    print(f"Failed to capture frame from {device}")
+                    # Add a delay to let the camera initialize
+                    time.sleep(2)
+
+                    # Read a frame
+                    ret, frame = cap.read()
+
+                    if ret:
+                        print(f"Successfully captured frame from {device}")
+                        print(f"Frame shape: {frame.shape}")
+
+                        # Display the frame
+                        cv2.imshow('Test Frame', frame)
+                        print("Press any key to continue...")
+                        cv2.waitKey(0)
+
+                        # Clean up
+                        cv2.destroyAllWindows()
+                        cap.release()
+                        return True
+                    else:
+                        print(
+                            f"Failed to capture frame with format {width}x{height}")
 
             cap.release()
             print(f"Device {device} not available")
 
-        print("No working camera found")
+        print("\nNo working camera found")
         return False
 
     except Exception as e:
